@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { SubmitButton } from '@/components/buttons';
 import { setUser, useAppDispatch } from '@/lib/store';
 
 interface FormData {
@@ -228,12 +229,9 @@ export default function RegisterPage() {
             </label>
 
             {/* Button */}
-            <button
-              type="submit"
-              className="mt-2 w-full rounded-full bg-brand py-3 font-bold text-black transition hover:bg-brand-hover"
-            >
+            <SubmitButton>
               SIGN UP
-            </button>
+            </SubmitButton>
 
             <p className="text-center text-white/50 text-xs leading-relaxed">
               By clicking on Sign up, you agree to Superapp{" "}

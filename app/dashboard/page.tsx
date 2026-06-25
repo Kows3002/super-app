@@ -3,6 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import {
+  BrandButton,
+  DarkButton,
+  DotButton,
+  IconControlButton,
+  SecondaryButton,
+} from '@/components/buttons';
 import { setNotes, useAppDispatch, useAppSelector } from '@/lib/store';
 import { Cloud, Wind, Gauge, Droplets, ChevronUp, ChevronDown } from 'lucide-react';
 import Skeleton from 'react-loading-skeleton';
@@ -270,12 +277,11 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="px-6 py-4 md:px-10 flex items-center justify-between border-b border-white/10">
         <span className="font-display text-3xl text-brand">Super app</span>
-        <button
+        <BrandButton
           onClick={() => router.push('/entertainment')}
-          className="rounded-full bg-brand-dark px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-darker"
         >
           Browse Entertainment
-        </button>
+        </BrandButton>
       </div>
 
       <div className="px-4 md:px-8 lg:px-12 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -386,30 +392,29 @@ export default function DashboardPage() {
               ].map(({ label, val, field }) => (
                 <div key={field} className="flex flex-col items-center gap-1">
                   <span className="text-white/40 text-xs">{label}</span>
-                  <button onClick={() => adjustTime(field, 1)} className="text-white/60 hover:text-white transition-colors">
+                  <IconControlButton onClick={() => adjustTime(field, 1)}>
                     <ChevronUp size={14} />
-                  </button>
+                  </IconControlButton>
                   <span className="text-white font-bold text-lg w-8 text-center">{pad(val)}</span>
-                  <button onClick={() => adjustTime(field, -1)} className="text-white/60 hover:text-white transition-colors">
+                  <IconControlButton onClick={() => adjustTime(field, -1)}>
                     <ChevronDown size={14} />
-                  </button>
+                  </IconControlButton>
                 </div>
               ))}
             </div>
 
             <div className="flex gap-3 justify-center">
-              <button
+              <BrandButton
                 onClick={() => setRunning((r) => !r)}
-                className="rounded-full bg-accentPink px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-accentPink-hover"
+                className="bg-accentPink px-6 hover:bg-accentPink-hover"
               >
                 {running ? 'Pause' : 'Start'}
-              </button>
-              <button
+              </BrandButton>
+              <SecondaryButton
                 onClick={() => { setRunning(false); setHours(5); setMinutes(8); setSeconds(56); }}
-                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-sm transition-colors"
               >
                 Reset
-              </button>
+              </SecondaryButton>
             </div>
           </div>
         </div>
@@ -441,10 +446,10 @@ export default function DashboardPage() {
               {/* Dots indicator */}
               <div className="flex justify-center gap-1.5 p-3">
                 {newsFeed.map((_, i) => (
-                  <button
+                  <DotButton
                     key={i}
                     onClick={() => setNewsIndex(i)}
-                    className={`h-1.5 w-1.5 rounded-full transition-colors ${i === newsIndex ? 'bg-brand' : 'bg-white/30'}`}
+                    active={i === newsIndex}
                   />
                 ))}
               </div>
@@ -463,12 +468,11 @@ export default function DashboardPage() {
               className="flex-1 bg-transparent text-black placeholder-black/40 text-sm leading-relaxed resize-none outline-none min-h-[200px]"
             />
             <div className="flex justify-end mt-3">
-              <button
+              <DarkButton
                 onClick={saveNotes}
-                className="bg-black text-white text-xs px-4 py-2 rounded-full hover:bg-black/80 transition-colors"
               >
                 Save Notes
-              </button>
+              </DarkButton>
             </div>
           </div>
 
@@ -481,12 +485,12 @@ export default function DashboardPage() {
           )}
 
           {/* Browse button */}
-          <button
+          <BrandButton
             onClick={() => router.push('/entertainment')}
-            className="rounded-2xl bg-brand-dark py-3 font-medium text-white transition-colors hover:bg-brand-darker"
+            className="rounded-2xl py-3"
           >
             Browse Entertainment
-          </button>
+          </BrandButton>
         </div>
       </div>
     </div>

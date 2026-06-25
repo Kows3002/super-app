@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ModalCloseButton, MovieCardButton, TextNavButton } from '@/components/buttons';
 import { useAppSelector } from '@/lib/store';
-import { X, Star, Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { Star, Calendar, Clock, ArrowLeft } from 'lucide-react';
 import Skeleton from 'react-loading-skeleton';
 
 interface Movie {
@@ -276,13 +277,13 @@ export default function EntertainmentPage() {
 
       <div className="px-6 md:px-10 py-8">
         {/* Back button */}
-        <button
+        <TextNavButton
           onClick={() => router.push('/dashboard')}
-          className="flex items-center gap-2 text-white/60 hover:text-white text-sm mb-6 transition-colors"
+          className="mb-6"
         >
           <ArrowLeft size={16} />
           Back to Dashboard
-        </button>
+        </TextNavButton>
 
         <h1 className="text-white text-2xl font-bold mb-8">Entertainment according to your choice</h1>
 
@@ -295,10 +296,9 @@ export default function EntertainmentPage() {
                 <h2 className="text-white/60 text-sm font-medium mb-4 uppercase tracking-wider">{cat}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
                   {(moviesByCategory[cat] || []).map((movie) => (
-                    <button
+                    <MovieCardButton
                       key={movie.imdbID}
                       onClick={() => openModal(movie)}
-                      className="group relative overflow-hidden rounded-lg aspect-[16/9] bg-white/5 hover:scale-105 transition-all duration-300"
                     >
                       <MoviePoster
                         src={movie.Poster}
@@ -316,7 +316,7 @@ export default function EntertainmentPage() {
                           {movie.Year}
                         </p>
                       </div>
-                    </button>
+                    </MovieCardButton>
                   ))}
                 </div>
               </section>
@@ -335,12 +335,7 @@ export default function EntertainmentPage() {
             className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-surface-elevated"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setSelectedMovie(null)}
-              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
-            >
-              <X size={18} />
-            </button>
+            <ModalCloseButton onClick={() => setSelectedMovie(null)} />
 
             <div className="flex flex-col sm:flex-row gap-0">
               {/* Poster */}

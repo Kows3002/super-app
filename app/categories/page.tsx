@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { BrandButton, CategoryCardButton, TagRemoveButton } from '@/components/buttons';
 import { setSelectedCategories, useAppDispatch, useAppSelector } from '@/lib/store';
 import { AlertTriangle } from 'lucide-react';
 
@@ -69,13 +69,12 @@ export default function CategoriesPage() {
                 className="flex items-center gap-2 rounded-full bg-brand-dark px-4 py-2 text-base font-medium text-white"
               >
                 {tag}
-                <button
+                <TagRemoveButton
                   onClick={() => removeTag(tag)}
-                  className="text-lg font-bold leading-none text-brand-deepest transition-colors hover:text-white"
                   aria-label={`Remove ${tag}`}
                 >
                   &times;
-                </button>
+                </TagRemoveButton>
               </span>
             ))}
           </div>
@@ -95,39 +94,24 @@ export default function CategoriesPage() {
             {CATEGORIES.map((cat) => {
               const isSelected = selected.includes(cat.name);
               return (
-                <button
+                <CategoryCardButton
                   key={cat.name}
                   onClick={() => toggle(cat.name)}
-                  aria-pressed={isSelected}
-                  className="text-left group"
-                >
-                  <div
-                    className={`w-full overflow-hidden rounded-[20px] transition-all duration-200 ${cat.colorClass} ${isSelected ? 'ring-[5px] ring-brand-ring' : 'ring-0'
-                      }`}
-                  >
-                    <div className="p-4 pb-3">
-                      <p className="mb-3 font-dm text-2xl font-medium text-white">{cat.name}</p>
-                      <Image
-                        src={cat.image}
-                        alt={cat.name}
-                        width={220}
-                        height={112}
-                        sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
-                        className="w-full h-28 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  </div>
-                </button>
+                  colorClass={cat.colorClass}
+                  image={cat.image}
+                  isSelected={isSelected}
+                  name={cat.name}
+                />
               );
             })}
           </div>
 
-          <button
+          <BrandButton
             onClick={handleNext}
-            className="rounded-full bg-brand-dark px-9 py-3 font-dm text-lg font-medium text-white transition-colors hover:bg-brand-darker"
+            className="px-9 py-3 font-dm text-lg"
           >
             Next Page
-          </button>
+          </BrandButton>
         </section>
       </div>
     </div>
