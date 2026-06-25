@@ -32,11 +32,47 @@ const fallbackNews = [
   },
 ];
 
+function normalizeNewsApiArticles(articles: any[]) {
+  return articles.map((article) => ({
+    title: article.title,
+    description: article.description || article.content || 'Read the latest news update.',
+    publishedAt: article.publishedAt,
+    urlToImage: article.urlToImage,
+    url: article.url,
+  }));
+}
+
+function normalizeWorldNewsArticles(articles: any[]) {
+  return articles.map((article) => ({
+    title: article.title,
+    description: article.text || article.summary || 'Read the latest world news update.',
+    publishedAt: article.publish_date,
+    urlToImage: article.image,
+    url: article.url,
+  }));
+}
+
 export async function GET() {
   try {
+    const worldNewsKey = process.env.WORLD_NEWS_KEY;
+
+    if (worldNewsKey) {
+      const worldNewsRes = await fetch(
+        `https://api.worldnewsapi.com/search-news?api-key=${worldNewsKey}&language=en&number=10&sort=publish-time`,
+        { next: { revalidate } }
+      );
+
+      if (!worldNewsRes.ok) throw new Error('World News request failed');
+
+      const worldNewsData = await worldNewsRes.json();
+      if (!worldNewsData.news?.length) throw new Error('No World News articles');
+
+      return NextResponse.json(normalizeWorldNewsArticles(worldNewsData.news));
+    }
+
     const apiKey = process.env.NEWS_KEY || process.env.NEXT_PUBLIC_NEWS_KEY;
     const res = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}&pageSize=10`,
+      `https://newsapi.org/v2/top-headlines?country=in&apiKey=${apiKey}&pageSize=10`,
       { next: { revalidate } }
     );
 
@@ -45,7 +81,7 @@ export async function GET() {
     const data = await res.json();
     if (!data.articles?.length) throw new Error('No articles');
 
-    return NextResponse.json(data.articles);
+    return NextResponse.json(normalizeNewsApiArticles(data.articles));
   } catch {
     return NextResponse.json(fallbackNews);
   }

@@ -157,6 +157,7 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error('failed');
         const data = await res.json();
         if (data?.length) {
+          console.log(data);
           setNewsFeed(prepareNewsFeed(data));
           setNewsIndex(0);
         } else throw new Error('no articles');
