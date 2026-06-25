@@ -231,17 +231,16 @@ export default function DashboardPage() {
     if (running) {
       timerRef.current = setInterval(() => {
         setSeconds((s) => {
-          if (s > 0) return s - 1;
+          if (s < 59) return s + 1;
+
           setMinutes((m) => {
-            if (m > 0) { setSeconds(59); return m - 1; }
-            setHours((h) => {
-              if (h > 0) { setMinutes(59); setSeconds(59); return h - 1; }
-              setRunning(false);
-              return 0;
-            });
-            return m;
+            if (m < 59) return m + 1;
+
+            setHours((h) => Math.min(99, h + 1));
+            return 0;
           });
-          return s;
+
+          return 0;
         });
       }, 1000);
     } else if (timerRef.current) {
@@ -257,9 +256,7 @@ export default function DashboardPage() {
     if (field === 's') setSeconds((v) => Math.max(0, Math.min(59, v + delta)));
   }
 
-  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-  const initialSeconds = 5 * 3600 + 8 * 60 + 56;
-  const progress = initialSeconds > 0 ? (totalSeconds / initialSeconds) : 0;
+  const progress = seconds / 60;
 
   // ----- Notes -----
   const [localNotes, setLocalNotes] = useState(notes);
@@ -411,7 +408,7 @@ export default function DashboardPage() {
                 {running ? 'Pause' : 'Start'}
               </BrandButton>
               <SecondaryButton
-                onClick={() => { setRunning(false); setHours(5); setMinutes(8); setSeconds(56); }}
+                onClick={() => { setRunning(false); setHours(0); setMinutes(0); setSeconds(0); }}
               >
                 Reset
               </SecondaryButton>
