@@ -55,13 +55,11 @@ export default function CategoriesPage() {
       </p>
 
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10 lg:gap-16">
-        {/* Left */}
         <aside className="w-full max-w-lg flex flex-col gap-6">
           <h1 className="font-dm text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
             Choose your entertainment category
           </h1>
 
-          {/* Selected tags */}
           <div className="flex flex-wrap gap-3 min-h-[40px]">
             {selected.map((tag) => (
               <span
@@ -79,7 +77,6 @@ export default function CategoriesPage() {
             ))}
           </div>
 
-          {/* Error */}
           {showError && (
             <div className="flex items-center gap-2 text-red-500 text-sm">
               <AlertTriangle size={16} />
@@ -88,7 +85,6 @@ export default function CategoriesPage() {
           )}
         </aside>
 
-        {/* Right: grid */}
         <section className="w-full max-w-3xl flex flex-col items-end gap-8">
           <div className="grid w-full grid-cols-2 sm:grid-cols-3 gap-5">
             {CATEGORIES.map((cat) => {

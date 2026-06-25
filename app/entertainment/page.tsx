@@ -258,7 +258,6 @@ export default function EntertainmentPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
       <div className="px-6 py-4 md:px-10 flex items-center justify-between border-b border-white/10 sticky top-0 bg-black/90 backdrop-blur-sm z-40">
         <span className="font-display text-3xl text-brand">Super app</span>
         <div className="flex items-center gap-4">
@@ -276,7 +275,6 @@ export default function EntertainmentPage() {
       </div>
 
       <div className="px-6 md:px-10 py-8">
-        {/* Back button */}
         <TextNavButton
           onClick={() => router.push('/dashboard')}
           className="mb-6"
@@ -325,7 +323,6 @@ export default function EntertainmentPage() {
         )}
       </div>
 
-      {/* Modal */}
       {selectedMovie && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -338,7 +335,6 @@ export default function EntertainmentPage() {
             <ModalCloseButton onClick={() => setSelectedMovie(null)} />
 
             <div className="flex flex-col sm:flex-row gap-0">
-              {/* Poster */}
               <div className="sm:w-56 shrink-0">
                 <MoviePoster
                   src={selectedMovie.Poster}
@@ -346,7 +342,6 @@ export default function EntertainmentPage() {
                   className="w-full sm:h-full object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none max-h-64 sm:max-h-none"
                 />
               </div>
-              {/* Details */}
               <div className="p-6 flex flex-col gap-3 flex-1">
                 <h2 className="text-white font-bold text-2xl leading-tight">{selectedMovie.Title}</h2>
 

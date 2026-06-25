@@ -11,10 +11,9 @@ import {
   SecondaryButton,
 } from '@/components/buttons';
 import { setNotes, useAppDispatch, useAppSelector } from '@/lib/store';
-import { Cloud, Wind, Gauge, Droplets, ChevronUp, ChevronDown } from 'lucide-react';
+import { Cloud, Wind, Droplets, ChevronUp, ChevronDown } from 'lucide-react';
 import Skeleton from 'react-loading-skeleton';
 
-// ----- Weather -----
 interface WeatherData {
   temp: number;
   description: string;
@@ -24,7 +23,6 @@ interface WeatherData {
   icon: string;
 }
 
-// ----- News -----
 interface NewsItem {
   title: string;
   description: string;
@@ -33,7 +31,6 @@ interface NewsItem {
   url: string;
 }
 
-// ----- Timer -----
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
@@ -103,13 +100,11 @@ export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const { user, selectedCategories, notes } = useAppSelector((state) => state.app);
 
-  // redirect if not registered
   useEffect(() => {
     if (!user) router.replace('/register');
     else if (selectedCategories.length === 0) router.replace('/categories');
   }, [user, selectedCategories, router]);
 
-  // ----- Date/Time -----
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -119,7 +114,6 @@ export default function DashboardPage() {
   const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  // ----- Weather -----
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
@@ -150,7 +144,6 @@ export default function DashboardPage() {
     return () => controller.abort();
   }, []);
 
-  // ----- News -----
   const [newsFeed, setNewsFeed] = useState<NewsItem[]>([]);
   const [newsIndex, setNewsIndex] = useState(0);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -220,7 +213,6 @@ export default function DashboardPage() {
 
   const currentNews = newsFeed[newsIndex] || null;
 
-  // ----- Timer / Countdown -----
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -258,235 +250,185 @@ export default function DashboardPage() {
 
   const progress = seconds / 60;
 
-  // ----- Notes -----
   const [localNotes, setLocalNotes] = useState(notes);
-  const [showNotes, setShowNotes] = useState(false);
 
   function saveNotes() {
     dispatch(setNotes(localNotes));
-    setShowNotes(false);
   }
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="px-6 py-4 md:px-10 flex items-center justify-between border-b border-white/10">
-        <span className="font-display text-3xl text-brand">Super app</span>
-        <BrandButton
-          onClick={() => router.push('/entertainment')}
-        >
-          Browse Entertainment
-        </BrandButton>
-      </div>
-
-      <div className="px-4 md:px-8 lg:px-12 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="flex flex-col gap-4">
-          {/* Profile Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-profile-card">
-            <div className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shrink-0">
-                  <Image
-                    src="https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=200"
-                    alt="avatar"
-                    width={80}
-                    height={80}
-                    priority
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-medium">{user.name}</p>
-                  <p className="text-white/70 text-xs">{user.email}</p>
-                  <p className="text-white text-2xl font-bold mt-1">{user.username}</p>
+    <div className="min-h-screen bg-black p-5 text-white md:p-10">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 lg:grid-cols-[286px_266px_262px] lg:items-start">
+        <section className="space-y-5">
+          <div className="rounded-lg bg-[#5746ea] p-4">
+            <div className="flex gap-5">
+              <div className="relative h-36 w-24 shrink-0 overflow-hidden rounded-[32px] border-2 border-white shadow-lg">
+                <Image
+                  src="https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=200"
+                  alt="avatar"
+                  fill
+                  priority
+                  sizes="96px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="min-w-0 pt-3">
+                <p className="truncate text-sm font-medium">{user.name}</p>
+                <p className="truncate text-xs text-white/85">{user.email}</p>
+                <p className="mt-1 truncate text-2xl font-bold">{user.username}</p>
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  {selectedCategories.slice(0, 4).map((cat) => (
+                    <span key={cat} className="rounded-full bg-[#9f94ff] px-4 py-1 text-center text-xs text-white">
+                      {cat}
+                    </span>
+                  ))}
                 </div>
               </div>
-              {/* Category badges */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                {selectedCategories.map((cat) => (
-                  <span key={cat} className="bg-white/20 text-white text-xs px-3 py-1 rounded-full">
-                    {cat}
-                  </span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-lg bg-[#101744]">
+            <div className="flex items-center justify-between bg-[#ff40d1] px-5 py-2 text-2xl font-bold">
+              <span>{dateStr}</span>
+              <span>{timeStr}</span>
+            </div>
+            <div className="p-4">
+              {weatherLoading ? (
+                <WeatherSkeleton />
+              ) : weather && (
+                <div className="grid grid-cols-[1fr_1px_1fr_1px_1fr] items-center gap-4">
+                  <div className="text-center">
+                    <Cloud size={46} className="mx-auto text-white" />
+                    <p className="mt-1 text-sm capitalize">{weather.description}</p>
+                  </div>
+                  <div className="h-16 bg-white/40" />
+                  <div className="text-center">
+                    <p className="text-4xl font-light">{weather.temp}&deg;C</p>
+                    <p className="mt-2 text-xs">{weather.pressure} mbar<br />Pressure</p>
+                  </div>
+                  <div className="h-16 bg-white/40" />
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Wind size={18} />
+                      <span>{weather.wind}<br />Wind</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Droplets size={18} />
+                      <span>{weather.humidity}%<br />Humidity</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="flex min-h-[302px] flex-col rounded-lg bg-[#f2c94c] p-7 text-black">
+          <h2 className="text-2xl font-bold">All notes</h2>
+          <textarea
+            value={localNotes}
+            onChange={(e) => setLocalNotes(e.target.value)}
+            placeholder="This is how I am going to learn MERN Stack in next 3 months."
+            className="mt-6 min-h-[180px] flex-1 resize-none bg-transparent text-sm leading-relaxed text-black outline-none placeholder:text-black"
+          />
+          <div className="mt-4 flex justify-end">
+            <DarkButton onClick={saveNotes}>Save Notes</DarkButton>
+          </div>
+        </section>
+
+        <section className="row-span-2 flex min-h-[510px] flex-col overflow-hidden rounded-lg bg-white text-black">
+          {newsLoading ? (
+            <NewsSkeleton />
+          ) : currentNews && (
+            <>
+              {currentNews.urlToImage && (
+                <div className="relative h-56 shrink-0">
+                  <Image
+                    src={currentNews.urlToImage}
+                    alt={currentNews.title}
+                    fill
+                    sizes="262px"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/60 p-4 text-white">
+                    <h2 className="text-lg font-bold leading-tight">{currentNews.title}</h2>
+                    <p className="mt-1 text-xs">{currentNews.publishedAt}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex-1 p-6 text-justify text-xs leading-6 text-black">
+                {currentNews.description}
+              </div>
+              <div className="flex justify-center gap-1.5 p-3">
+                {newsFeed.map((_, i) => (
+                  <DotButton key={i} onClick={() => setNewsIndex(i)} active={i === newsIndex} />
                 ))}
               </div>
-            </div>
-          </div>
+            </>
+          )}
+        </section>
 
-          {/* Date/Weather Card */}
-          <div className="rounded-2xl border border-white/10 bg-surface-elevated p-4">
-            {/* Date & Time row */}
-            <div className="mb-4 flex items-center justify-between rounded-xl bg-accentPink px-4 py-2">
-              <span className="text-white font-bold text-sm">{dateStr}</span>
-              <span className="text-white font-bold text-sm">{timeStr}</span>
-            </div>
-
-            {/* Weather */}
-            {weatherLoading ? (
-              <WeatherSkeleton />
-            ) : weather && (
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <Cloud size={32} className="text-blue-300" />
-                  <div>
-                    <p className="text-3xl font-bold text-white">{weather.temp}&deg;C</p>
-                    <p className="text-white/60 text-xs capitalize">{weather.description}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs text-white/70">
-                  <div className="flex flex-col items-center gap-1">
-                    <Wind size={14} />
-                    <span>{weather.wind}</span>
-                    <span className="text-white/40">Wind</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <Gauge size={14} />
-                    <span>{weather.pressure}</span>
-                    <span className="text-white/40">mbar Pressure</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <Droplets size={14} />
-                    <span>{weather.humidity}%</span>
-                    <span className="text-white/40">Humidity</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Timer */}
-          <div className="rounded-2xl border border-white/10 bg-surface p-4">
-            {/* Circular progress */}
-            <div className="flex justify-center mb-4">
-              <div className="relative w-28 h-28">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="44" fill="none" strokeWidth="8" className="stroke-white/20" />
-                  <circle
-                    cx="50" cy="50" r="44" fill="none"
-                    strokeWidth="8"
-                    strokeDasharray={`${2 * Math.PI * 44}`}
-                    strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress)}`}
-                    strokeLinecap="round"
-                    className="stroke-accentPink transition-all duration-1000"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white font-bold text-base">
-                    {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-                  </span>
-                </div>
+        <section className="rounded-lg border-2 border-sky-500 bg-[#1b2148] p-4 lg:col-span-2">
+          <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[190px_1fr]">
+            <div className="relative mx-auto h-36 w-36">
+              <svg className="h-full w-full -rotate-90 drop-shadow-2xl" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-black/30" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  strokeWidth="5"
+                  strokeDasharray={`${2 * Math.PI * 42}`}
+                  strokeDashoffset={`${2 * Math.PI * 42 * (1 - progress)}`}
+                  strokeLinecap="round"
+                  className="stroke-[#ff6b6b] transition-all duration-1000"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold">
+                {pad(hours)}:{pad(minutes)}:{pad(seconds)}
               </div>
             </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-6 mb-4">
-              {[
-                { label: 'Hours', val: hours, field: 'h' as const },
-                { label: 'Minutes', val: minutes, field: 'm' as const },
-                { label: 'Seconds', val: seconds, field: 's' as const },
-              ].map(({ label, val, field }) => (
-                <div key={field} className="flex flex-col items-center gap-1">
-                  <span className="text-white/40 text-xs">{label}</span>
-                  <IconControlButton onClick={() => adjustTime(field, 1)}>
-                    <ChevronUp size={14} />
-                  </IconControlButton>
-                  <span className="text-white font-bold text-lg w-8 text-center">{pad(val)}</span>
-                  <IconControlButton onClick={() => adjustTime(field, -1)}>
-                    <ChevronDown size={14} />
-                  </IconControlButton>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3 justify-center">
+            <div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {[
+                  { label: 'Hours', val: hours, field: 'h' as const },
+                  { label: 'Minutes', val: minutes, field: 'm' as const },
+                  { label: 'Seconds', val: seconds, field: 's' as const },
+                ].map(({ label, val, field }) => (
+                  <div key={field} className="flex flex-col items-center gap-2">
+                    <span className="text-sm text-white/45">{label}</span>
+                    <IconControlButton onClick={() => adjustTime(field, 1)}>
+                      <ChevronUp size={24} fill="currentColor" />
+                    </IconControlButton>
+                    <span className="w-16 text-3xl font-light">{pad(val)}</span>
+                    <IconControlButton onClick={() => adjustTime(field, -1)}>
+                      <ChevronDown size={24} fill="currentColor" />
+                    </IconControlButton>
+                  </div>
+                ))}
+              </div>
               <BrandButton
                 onClick={() => setRunning((r) => !r)}
-                className="bg-accentPink px-6 hover:bg-accentPink-hover"
+                className="mt-4 w-full bg-[#ff6b6b] py-2 text-lg hover:bg-[#ff5b5b]"
               >
                 {running ? 'Pause' : 'Start'}
               </BrandButton>
               <SecondaryButton
                 onClick={() => { setRunning(false); setHours(0); setMinutes(0); setSeconds(0); }}
+                className="mt-3 w-full"
               >
                 Reset
               </SecondaryButton>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Middle Column: News */}
-        <div className="flex flex-col gap-4">
-          {newsLoading ? (
-            <NewsSkeleton />
-          ) : currentNews && (
-            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface">
-              {/* Image */}
-              {currentNews.urlToImage && (
-                <div className="relative h-48 overflow-hidden shrink-0">
-                  <Image
-                    src={currentNews.urlToImage}
-                    alt={currentNews.title}
-                    fill
-                    sizes="(min-width: 1024px) 33vw, 100vw"
-                    className="object-cover transition-opacity duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                </div>
-              )}
-              <div className="p-4 flex-1 overflow-y-auto">
-                <h2 className="text-white font-bold text-lg mb-1 leading-tight">{currentNews.title}</h2>
-                <p className="text-white/40 text-xs mb-3">{currentNews.publishedAt}</p>
-                <p className="text-white/70 text-sm leading-relaxed line-clamp-6">{currentNews.description}</p>
-              </div>
-              {/* Dots indicator */}
-              <div className="flex justify-center gap-1.5 p-3">
-                {newsFeed.map((_, i) => (
-                  <DotButton
-                    key={i}
-                    onClick={() => setNewsIndex(i)}
-                    active={i === newsIndex}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Notes */}
-        <div className="flex flex-col gap-4">
-          <div className="flex min-h-[300px] flex-col rounded-2xl bg-note p-5 text-black">
-            <h3 className="font-bold text-lg mb-3">All notes</h3>
-            <textarea
-              value={localNotes}
-              onChange={(e) => setLocalNotes(e.target.value)}
-              placeholder="Start typing your notes here..."
-              className="flex-1 bg-transparent text-black placeholder-black/40 text-sm leading-relaxed resize-none outline-none min-h-[200px]"
-            />
-            <div className="flex justify-end mt-3">
-              <DarkButton
-                onClick={saveNotes}
-              >
-                Save Notes
-              </DarkButton>
-            </div>
-          </div>
-
-          {/* Saved notes preview */}
-          {notes && (
-            <div className="rounded-2xl bg-note/80 p-5 text-black">
-              <h3 className="font-bold text-sm mb-2">Saved Note</h3>
-              <p className="text-xs leading-relaxed line-clamp-6">{notes}</p>
-            </div>
-          )}
-
-          {/* Browse button */}
-          <BrandButton
-            onClick={() => router.push('/entertainment')}
-            className="rounded-2xl py-3"
-          >
-            Browse Entertainment
+        <div className="flex justify-end lg:col-start-3">
+          <BrandButton onClick={() => router.push('/entertainment')} className="px-8">
+            Browse
           </BrandButton>
         </div>
       </div>

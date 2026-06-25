@@ -18,6 +18,7 @@ interface Errors {
   username?: string;
   email?: string;
   mobile?: string;
+  shareData?: string;
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -57,24 +58,26 @@ export default function RegisterPage() {
     const mobile = normalizeMobile(form.mobile);
     const mobileDigits = mobile.replace(/^\+/, '');
 
-    if (!name) e.name = 'Name is required';
+    if (!name) e.name = 'Field is required';
     else if (countLetters(name) < 4) e.name = 'Name must be more than 3 letters';
     else if (!namePattern.test(name)) e.name = 'Name can only contain letters and spaces';
 
-    if (!username) e.username = 'Username is required';
+    if (!username) e.username = 'Field is required';
     else if (countLetters(username) < 4) e.username = 'Username must include more than 3 letters';
     else if (!usernamePattern.test(username)) {
       e.username = 'Username must start with a letter and use only letters, numbers, or underscores';
     }
 
-    if (!email) e.email = 'Email is required';
+    if (!email) e.email = 'Field is required';
     else if (!emailPattern.test(email)) e.email = 'Enter a valid email address';
 
-    if (!form.mobile.trim()) e.mobile = 'Mobile number is required';
+    if (!form.mobile.trim()) e.mobile = 'Field is required';
     else if (!/^\+?\d+$/.test(mobile)) e.mobile = 'Mobile number can only contain digits';
     else if (mobileDigits.length < 10 || mobileDigits.length > 15) {
       e.mobile = 'Mobile number must be 10 to 15 digits';
     }
+
+    if (!form.shareData) e.shareData = 'Check this box if you want to proceed';
 
     return e;
   }
@@ -104,41 +107,37 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-black">
-      {/* LEFT SIDE */}
-      <div className="relative min-h-[50vh] w-full bg-signup-hero bg-cover bg-center lg:min-h-screen lg:w-1/2">
-        {/* Dark Overlay */}
+    <div className="min-h-screen bg-[#1f1f1f] p-2">
+      <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-[1074px] flex-col bg-black lg:flex-row">
+      <div className="relative min-h-[50vh] w-full bg-signup-hero bg-cover bg-center lg:min-h-[calc(100vh-1rem)] lg:w-[49%]">
         <div className="absolute inset-0 bg-black/40" />
 
-        {/* Content */}
-        <div className="relative z-10 h-full flex flex-col justify-between p-8 lg:p-12">
+        <div className="relative z-10 h-full flex flex-col justify-between p-8 lg:p-10">
           <div className="mt-auto">
-            <h2 className="text-white text-4xl lg:text-5xl font-bold leading-tight max-w-md">
+            <h2 className="max-w-md text-3xl font-bold leading-tight text-white lg:text-[34px]">
               Discover new things on Superapp
             </h2>
           </div>
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
-      <div className="w-full lg:w-1/2 bg-black flex items-center justify-center px-8 py-10">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h2 className="font-display text-4xl text-brand">
+      <div className="flex w-full items-center justify-center bg-black px-8 py-10 lg:w-[51%]">
+        <div className="w-full max-w-[322px]">
+          <div className="mb-7 text-center">
+            <h2 className="font-display text-[40px] leading-none text-brand">
               Super app
             </h2>
 
-            <p className="text-white/70 mt-2">
+            <p className="mt-6 text-[15px] text-white">
               Create your new account
             </p>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-3"
             noValidate
           >
-            {/* Name */}
             <div>
               <input
                 type="text"
@@ -147,17 +146,16 @@ export default function RegisterPage() {
                 value={form.name}
                 onChange={handleChange}
                 aria-invalid={Boolean(errors.name)}
-                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.name ? 'border border-red-500' : ''
+                className={`h-10 w-full rounded-sm bg-surface-field px-3 text-xs text-white placeholder-gray-400 outline-none ${errors.name ? 'border border-red-600' : ''
                   }`}
               />
               {errors.name && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="mt-2 text-xs text-red-600">
                   {errors.name}
                 </p>
               )}
             </div>
 
-            {/* Username */}
             <div>
               <input
                 type="text"
@@ -166,17 +164,16 @@ export default function RegisterPage() {
                 value={form.username}
                 onChange={handleChange}
                 aria-invalid={Boolean(errors.username)}
-                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.username ? 'border border-red-500' : ''
+                className={`h-10 w-full rounded-sm bg-surface-field px-3 text-xs text-white placeholder-gray-400 outline-none ${errors.username ? 'border border-red-600' : ''
                   }`}
               />
               {errors.username && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="mt-2 text-xs text-red-600">
                   {errors.username}
                 </p>
               )}
             </div>
 
-            {/* Email */}
             <div>
               <input
                 type="email"
@@ -185,17 +182,16 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={handleChange}
                 aria-invalid={Boolean(errors.email)}
-                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.email ? 'border border-red-500' : ''
+                className={`h-10 w-full rounded-sm bg-surface-field px-3 text-xs text-white placeholder-gray-400 outline-none ${errors.email ? 'border border-red-600' : ''
                   }`}
               />
               {errors.email && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="mt-2 text-xs text-red-600">
                   {errors.email}
                 </p>
               )}
             </div>
 
-            {/* Mobile */}
             <div>
               <input
                 type="tel"
@@ -204,51 +200,56 @@ export default function RegisterPage() {
                 value={form.mobile}
                 onChange={handleChange}
                 aria-invalid={Boolean(errors.mobile)}
-                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.mobile ? 'border border-red-500' : ''
+                className={`h-10 w-full rounded-sm bg-surface-field px-3 text-xs text-white placeholder-gray-400 outline-none ${errors.mobile ? 'border border-red-600' : ''
                   }`}
               />
               {errors.mobile && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="mt-2 text-xs text-red-600">
                   {errors.mobile}
                 </p>
               )}
             </div>
 
-            {/* Checkbox */}
-            <label className="flex items-center gap-2 mt-2">
+            <label className="mt-1 flex items-center gap-2">
               <input
                 type="checkbox"
                 name="shareData"
                 checked={form.shareData}
                 onChange={handleChange}
-                className="accent-brand"
+                aria-invalid={Boolean(errors.shareData)}
+                className="h-3 w-3 accent-brand"
               />
-              <span className="text-white/70 text-sm">
+              <span className="text-xs text-white/60">
                 Share my registration data with Superapp
               </span>
             </label>
+            {errors.shareData && (
+              <p className="-mt-1 text-xs text-red-600">
+                {errors.shareData}
+              </p>
+            )}
 
-            {/* Button */}
-            <SubmitButton>
+            <SubmitButton className="mt-1 h-9 py-0 text-base font-bold text-white">
               SIGN UP
             </SubmitButton>
 
-            <p className="text-center text-white/50 text-xs leading-relaxed">
+            <p className="mt-1 text-[11px] leading-relaxed text-white/50">
               By clicking on Sign up, you agree to Superapp{" "}
-              <span className="text-brand">
+              <span className="font-bold text-brand">
                 Terms and Conditions of Use
               </span>
             </p>
 
-            <p className="text-center text-white/50 text-xs leading-relaxed">
+            <p className="text-[11px] leading-relaxed text-white/50">
               To learn more about how Superapp collects, uses, shares and
               protects your personal data please head Superapp{" "}
-              <span className="text-brand">
+              <span className="font-bold text-brand">
                 Privacy Policy
               </span>
             </p>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );
