@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
+import Image from 'next/image';
+import { setNotes, useAppDispatch, useAppSelector } from '@/lib/store';
 import { Cloud, Wind, Gauge, Droplets, ChevronUp, ChevronDown } from 'lucide-react';
+import Skeleton from 'react-loading-skeleton';
 
 // ----- Weather -----
 interface WeatherData {
@@ -29,9 +31,70 @@ function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
+function getNewsKey(news: NewsItem) {
+  return `${news.title.trim().toLowerCase()}-${news.url?.trim().toLowerCase() ?? ''}`;
+}
+
+function prepareNewsFeed(articles: NewsItem[]) {
+  const uniqueNews = new Map<string, NewsItem>();
+
+  articles.forEach((article) => {
+    if (!article.title?.trim()) return;
+    uniqueNews.set(getNewsKey(article), article);
+  });
+
+  return Array.from(uniqueNews.values()).sort((a, b) => {
+    const dateA = new Date(a.publishedAt).getTime();
+    const dateB = new Date(b.publishedAt).getTime();
+    return (Number.isNaN(dateB) ? 0 : dateB) - (Number.isNaN(dateA) ? 0 : dateA);
+  });
+}
+
+function WeatherSkeleton() {
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-3">
+        <Skeleton circle width={44} height={44} />
+        <div className="flex-1">
+          <Skeleton width={82} height={34} />
+          <Skeleton width={120} height={14} />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className="flex flex-col items-center gap-2">
+            <Skeleton circle width={18} height={18} />
+            <Skeleton width={44} height={12} />
+            <Skeleton width={68} height={10} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NewsSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface">
+      <Skeleton height={190} borderRadius={0} />
+      <div className="flex-1 overflow-hidden p-4">
+        <Skeleton width="85%" height={26} />
+        <Skeleton width="42%" height={12} className="mt-2" />
+        <Skeleton count={5} className="mt-3" />
+      </div>
+      <div className="flex justify-center gap-1.5 p-3">
+        {[0, 1, 2, 3].map((item) => (
+          <Skeleton key={item} circle width={6} height={6} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, selectedCategories, notes, setNotes } = useAppStore();
+  const dispatch = useAppDispatch();
+  const { user, selectedCategories, notes } = useAppSelector((state) => state.app);
 
   // redirect if not registered
   useEffect(() => {
@@ -54,23 +117,16 @@ export default function DashboardPage() {
   const [weatherLoading, setWeatherLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchWeather() {
       try {
-        const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_KEY || 'demo';
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${apiKey}&units=metric`
-        );
+        const res = await fetch('/api/weather', { signal: controller.signal });
         if (!res.ok) throw new Error('failed');
         const data = await res.json();
-        setWeather({
-          temp: Math.round(data.main.temp),
-          description: data.weather[0].description,
-          wind: `${data.wind.speed} km/h`,
-          pressure: data.main.pressure,
-          humidity: data.main.humidity,
-          icon: data.weather[0].icon,
-        });
+        setWeather(data);
       } catch {
+        if (controller.signal.aborted) return;
         setWeather({
           temp: 24,
           description: 'Heavy rain',
@@ -80,10 +136,11 @@ export default function DashboardPage() {
           icon: '10d',
         });
       } finally {
-        setWeatherLoading(false);
+        if (!controller.signal.aborted) setWeatherLoading(false);
       }
     }
     fetchWeather();
+    return () => controller.abort();
   }, []);
 
   // ----- News -----
@@ -92,19 +149,20 @@ export default function DashboardPage() {
   const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchNews() {
       try {
-        const apiKey = process.env.NEXT_PUBLIC_NEWS_KEY || 'demo';
-        const res = await fetch(
-          `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}&pageSize=10`
-        );
+        const res = await fetch('/api/news', { signal: controller.signal });
         if (!res.ok) throw new Error('failed');
         const data = await res.json();
-        if (data.articles?.length) {
-          setNewsFeed(data.articles);
+        if (data?.length) {
+          setNewsFeed(prepareNewsFeed(data));
+          setNewsIndex(0);
         } else throw new Error('no articles');
       } catch {
-        setNewsFeed([
+        if (controller.signal.aborted) return;
+        setNewsFeed(prepareNewsFeed([
           {
             title: 'Want to climb Mount Everest?',
             description: 'In the years since human beings first reached the summit of Mount Everest in 1953, climbing the world\'s highest mountain has changed dramatically...',
@@ -126,18 +184,29 @@ export default function DashboardPage() {
             urlToImage: 'https://images.pexels.com/photos/41162/moon-landing-apollo-11-nasa-41162.jpeg?auto=compress&cs=tinysrgb&w=600',
             url: '#',
           },
-        ]);
+        ]));
+        setNewsIndex(0);
       } finally {
-        setNewsLoading(false);
+        if (!controller.signal.aborted) setNewsLoading(false);
       }
     }
     fetchNews();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     if (newsFeed.length < 2) return;
     const t = setInterval(() => {
-      setNewsIndex((i) => (i + 1) % newsFeed.length);
+      setNewsIndex((currentIndex) => {
+        const currentNewsKey = getNewsKey(newsFeed[currentIndex]);
+
+        for (let offset = 1; offset < newsFeed.length; offset += 1) {
+          const nextIndex = (currentIndex + offset) % newsFeed.length;
+          if (getNewsKey(newsFeed[nextIndex]) !== currentNewsKey) return nextIndex;
+        }
+
+        return currentIndex;
+      });
     }, 2000);
     return () => clearInterval(t);
   }, [newsFeed]);
@@ -145,9 +214,9 @@ export default function DashboardPage() {
   const currentNews = newsFeed[newsIndex] || null;
 
   // ----- Timer / Countdown -----
-  const [hours, setHours] = useState(5);
-  const [minutes, setMinutes] = useState(8);
-  const [seconds, setSeconds] = useState(56);
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+  const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -190,7 +259,7 @@ export default function DashboardPage() {
   const [showNotes, setShowNotes] = useState(false);
 
   function saveNotes() {
-    setNotes(localNotes);
+    dispatch(setNotes(localNotes));
     setShowNotes(false);
   }
 
@@ -200,10 +269,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <div className="px-6 py-4 md:px-10 flex items-center justify-between border-b border-white/10">
-        <span className="font-single-day text-3xl text-[#72db73]">Super app</span>
+        <span className="font-display text-3xl text-brand">Super app</span>
         <button
           onClick={() => router.push('/entertainment')}
-          className="bg-[#148a08] hover:bg-[#0f6e06] text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
+          className="rounded-full bg-brand-dark px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-darker"
         >
           Browse Entertainment
         </button>
@@ -213,13 +282,16 @@ export default function DashboardPage() {
         {/* Left Column */}
         <div className="flex flex-col gap-4">
           {/* Profile Card */}
-          <div className="rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #4c1d95 100%)' }}>
+          <div className="relative overflow-hidden rounded-2xl bg-profile-card">
             <div className="p-5">
               <div className="flex items-start gap-4">
                 <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shrink-0">
-                  <img
+                  <Image
                     src="https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=200"
                     alt="avatar"
+                    width={80}
+                    height={80}
+                    priority
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -241,22 +313,22 @@ export default function DashboardPage() {
           </div>
 
           {/* Date/Weather Card */}
-          <div className="rounded-2xl bg-[#1a1a2e] border border-white/10 p-4">
+          <div className="rounded-2xl border border-white/10 bg-surface-elevated p-4">
             {/* Date & Time row */}
-            <div className="flex items-center justify-between mb-4 bg-[#ff2d7a] rounded-xl px-4 py-2">
+            <div className="mb-4 flex items-center justify-between rounded-xl bg-accentPink px-4 py-2">
               <span className="text-white font-bold text-sm">{dateStr}</span>
               <span className="text-white font-bold text-sm">{timeStr}</span>
             </div>
 
             {/* Weather */}
             {weatherLoading ? (
-              <div className="text-white/40 text-sm text-center py-4">Loading weather...</div>
+              <WeatherSkeleton />
             ) : weather && (
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <Cloud size={32} className="text-blue-300" />
                   <div>
-                    <p className="text-3xl font-bold text-white">{weather.temp}°C</p>
+                    <p className="text-3xl font-bold text-white">{weather.temp}&deg;C</p>
                     <p className="text-white/60 text-xs capitalize">{weather.description}</p>
                   </div>
                 </div>
@@ -282,20 +354,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Timer */}
-          <div className="rounded-2xl bg-[#111] border border-white/10 p-4">
+          <div className="rounded-2xl border border-white/10 bg-surface p-4">
             {/* Circular progress */}
             <div className="flex justify-center mb-4">
               <div className="relative w-28 h-28">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="#333" strokeWidth="8" />
+                  <circle cx="50" cy="50" r="44" fill="none" strokeWidth="8" className="stroke-white/20" />
                   <circle
                     cx="50" cy="50" r="44" fill="none"
-                    stroke="#ff2d7a"
                     strokeWidth="8"
                     strokeDasharray={`${2 * Math.PI * 44}`}
                     strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress)}`}
                     strokeLinecap="round"
-                    className="transition-all duration-1000"
+                    className="stroke-accentPink transition-all duration-1000"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -329,7 +400,7 @@ export default function DashboardPage() {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setRunning((r) => !r)}
-                className="bg-[#ff2d7a] hover:bg-[#e0256a] text-white px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                className="rounded-full bg-accentPink px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-accentPink-hover"
               >
                 {running ? 'Pause' : 'Start'}
               </button>
@@ -346,18 +417,18 @@ export default function DashboardPage() {
         {/* Middle Column: News */}
         <div className="flex flex-col gap-4">
           {newsLoading ? (
-            <div className="rounded-2xl bg-[#111] border border-white/10 h-80 flex items-center justify-center text-white/40">
-              Loading news...
-            </div>
+            <NewsSkeleton />
           ) : currentNews && (
-            <div className="rounded-2xl overflow-hidden bg-[#111] border border-white/10 h-full flex flex-col">
+            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface">
               {/* Image */}
               {currentNews.urlToImage && (
                 <div className="relative h-48 overflow-hidden shrink-0">
-                  <img
+                  <Image
                     src={currentNews.urlToImage}
                     alt={currentNews.title}
-                    className="w-full h-full object-cover transition-opacity duration-500"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, 100vw"
+                    className="object-cover transition-opacity duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
@@ -369,11 +440,11 @@ export default function DashboardPage() {
               </div>
               {/* Dots indicator */}
               <div className="flex justify-center gap-1.5 p-3">
-                {newsFeed.slice(0, 6).map((_, i) => (
+                {newsFeed.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setNewsIndex(i)}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${i === newsIndex ? 'bg-[#72db73]' : 'bg-white/30'}`}
+                    className={`h-1.5 w-1.5 rounded-full transition-colors ${i === newsIndex ? 'bg-brand' : 'bg-white/30'}`}
                   />
                 ))}
               </div>
@@ -383,7 +454,7 @@ export default function DashboardPage() {
 
         {/* Right Column: Notes */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl bg-[#f5c518] text-black p-5 min-h-[300px] flex flex-col">
+          <div className="flex min-h-[300px] flex-col rounded-2xl bg-note p-5 text-black">
             <h3 className="font-bold text-lg mb-3">All notes</h3>
             <textarea
               value={localNotes}
@@ -403,7 +474,7 @@ export default function DashboardPage() {
 
           {/* Saved notes preview */}
           {notes && (
-            <div className="rounded-2xl bg-[#f5c518]/80 text-black p-5">
+            <div className="rounded-2xl bg-note/80 p-5 text-black">
               <h3 className="font-bold text-sm mb-2">Saved Note</h3>
               <p className="text-xs leading-relaxed line-clamp-6">{notes}</p>
             </div>
@@ -412,7 +483,7 @@ export default function DashboardPage() {
           {/* Browse button */}
           <button
             onClick={() => router.push('/entertainment')}
-            className="bg-[#148a08] hover:bg-[#0f6e06] text-white py-3 rounded-2xl font-medium transition-colors"
+            className="rounded-2xl bg-brand-dark py-3 font-medium text-white transition-colors hover:bg-brand-darker"
           >
             Browse Entertainment
           </button>

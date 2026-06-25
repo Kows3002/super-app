@@ -2,23 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
+import Image from 'next/image';
+import { setSelectedCategories, useAppDispatch, useAppSelector } from '@/lib/store';
 import { AlertTriangle } from 'lucide-react';
 
 const CATEGORIES = [
-  { name: 'Action', color: '#ff5108', image: '/images/categories/action.png' },
-  { name: 'Drama', color: '#d6a4ff', image: '/images/categories/drama.png' },
-  { name: 'Romance', color: '#148a08', image: '/images/categories/romance.png' },
-  { name: 'Thriller', color: '#84c1ff', image: '/images/categories/thriller.png' },
-  { name: 'Western', color: '#902400', image: '/images/categories/western.png' },
-  { name: 'Horror', color: '#7358ff', image: '/images/categories/horror.png' },
-  { name: 'Fantasy', color: '#ff49dd', image: '/images/categories/fantasy.png' },
-  { name: 'Music', color: '#e61e32', image: '/images/categories/music.png' },
-  { name: 'Fiction', color: '#6bd061', image: '/images/categories/fiction.png' },
+  { name: 'Action', colorClass: 'bg-category-action', image: '/images/categories/action.png' },
+  { name: 'Drama', colorClass: 'bg-category-drama', image: '/images/categories/drama.png' },
+  { name: 'Romance', colorClass: 'bg-category-romance', image: '/images/categories/romance.png' },
+  { name: 'Thriller', colorClass: 'bg-category-thriller', image: '/images/categories/thriller.png' },
+  { name: 'Western', colorClass: 'bg-category-western', image: '/images/categories/western.png' },
+  { name: 'Horror', colorClass: 'bg-category-horror', image: '/images/categories/horror.png' },
+  { name: 'Fantasy', colorClass: 'bg-category-fantasy', image: '/images/categories/fantasy.png' },
+  { name: 'Music', colorClass: 'bg-category-music', image: '/images/categories/music.png' },
+  { name: 'Fiction', colorClass: 'bg-category-fiction', image: '/images/categories/fiction.png' },
 ];
 export default function CategoriesPage() {
   const router = useRouter();
-  const { user, selectedCategories, setSelectedCategories } = useAppStore();
+  const dispatch = useAppDispatch();
+  const { user, selectedCategories } = useAppSelector((state) => state.app);
   const [selected, setSelected] = useState<string[]>(selectedCategories);
   const [showError, setShowError] = useState(false);
 
@@ -42,20 +44,20 @@ export default function CategoriesPage() {
       setShowError(true);
       return;
     }
-    setSelectedCategories(selected);
+    dispatch(setSelectedCategories(selected));
     router.push('/dashboard');
   }
 
   return (
     <div className="min-h-screen w-full bg-black px-6 py-8 md:px-10 lg:px-16 xl:px-20">
-      <p className="font-single-day text-4xl sm:text-5xl lg:text-6xl text-[#72db73] mb-8 lg:mb-10">
+      <p className="mb-8 font-display text-4xl text-brand sm:text-5xl lg:mb-10 lg:text-6xl">
         Super app
       </p>
 
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10 lg:gap-16">
         {/* Left */}
         <aside className="w-full max-w-lg flex flex-col gap-6">
-          <h1 className="font-dm-sans text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+          <h1 className="font-dm text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
             Choose your entertainment category
           </h1>
 
@@ -64,15 +66,15 @@ export default function CategoriesPage() {
             {selected.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-2 bg-[#148a08] text-white rounded-full px-4 py-2 text-base font-medium"
+                className="flex items-center gap-2 rounded-full bg-brand-dark px-4 py-2 text-base font-medium text-white"
               >
                 {tag}
                 <button
                   onClick={() => removeTag(tag)}
-                  className="text-[#085b00] font-bold hover:text-white transition-colors text-lg leading-none"
+                  className="text-lg font-bold leading-none text-brand-deepest transition-colors hover:text-white"
                   aria-label={`Remove ${tag}`}
                 >
-                  ×
+                  &times;
                 </button>
               </span>
             ))}
@@ -100,15 +102,17 @@ export default function CategoriesPage() {
                   className="text-left group"
                 >
                   <div
-                    className={`w-full rounded-[20px] overflow-hidden transition-all duration-200 ${isSelected ? 'ring-[5px] ring-[#10b800]' : 'ring-0'
+                    className={`w-full overflow-hidden rounded-[20px] transition-all duration-200 ${cat.colorClass} ${isSelected ? 'ring-[5px] ring-brand-ring' : 'ring-0'
                       }`}
-                    style={{ backgroundColor: cat.color }}
                   >
                     <div className="p-4 pb-3">
-                      <p className="font-dm-sans text-2xl font-medium text-white mb-3">{cat.name}</p>
-                      <img
+                      <p className="mb-3 font-dm text-2xl font-medium text-white">{cat.name}</p>
+                      <Image
                         src={cat.image}
                         alt={cat.name}
+                        width={220}
+                        height={112}
+                        sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
                         className="w-full h-28 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
@@ -120,7 +124,7 @@ export default function CategoriesPage() {
 
           <button
             onClick={handleNext}
-            className="bg-[#148a08] hover:bg-[#0f6e06] text-white font-dm-sans font-medium text-lg px-9 py-3 rounded-full transition-colors"
+            className="rounded-full bg-brand-dark px-9 py-3 font-dm text-lg font-medium text-white transition-colors hover:bg-brand-darker"
           >
             Next Page
           </button>

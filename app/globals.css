@@ -35,29 +35,5 @@
   }
   body {
     @apply bg-black text-white;
-    font-family: 'Roboto', Helvetica, sans-serif;
   }
-}
-
-.font-single-day {
-  font-family: 'Single Day', Helvetica, cursive;
-}
-
-.font-dm-sans {
-  font-family: 'DM Sans', Helvetica, sans-serif;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-
-/* News ticker */
-@keyframes scroll-left {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-.news-scroll {
-  animation: scroll-left 20s linear infinite;
 }

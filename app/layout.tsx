@@ -1,5 +1,7 @@
 import './globals.css';
+import 'react-loading-skeleton/dist/skeleton.css';
 import type { Metadata } from 'next';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://super-app-iota-peach.vercel.app'),
@@ -76,7 +78,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="font-sans">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

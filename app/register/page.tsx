@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
+import { setUser, useAppDispatch } from '@/lib/store';
 
 interface FormData {
   name: string;
@@ -19,9 +19,25 @@ interface Errors {
   mobile?: string;
 }
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const namePattern = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+const usernamePattern = /^[A-Za-z][A-Za-z0-9_]*$/;
+
+function normalizeName(value: string) {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+function countLetters(value: string) {
+  return (value.match(/[A-Za-z]/g) ?? []).length;
+}
+
+function normalizeMobile(value: string) {
+  return value.replace(/[\s()-]/g, '');
+}
+
 export default function RegisterPage() {
   const router = useRouter();
-  const setUser = useAppStore((s) => s.setUser);
+  const dispatch = useAppDispatch();
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -31,16 +47,34 @@ export default function RegisterPage() {
     shareData: false,
   });
   const [errors, setErrors] = useState<Errors>({});
-  const [submitted, setSubmitted] = useState(false);
 
   function validate(): Errors {
     const e: Errors = {};
-    if (!form.name.trim()) e.name = 'Field is required';
-    if (!form.username.trim()) e.username = 'Field is required';
-    if (!form.email.trim()) e.email = 'Field is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
-    if (!form.mobile.trim()) e.mobile = 'Field is required';
-    else if (!/^\+?[\d\s\-]{7,15}$/.test(form.mobile)) e.mobile = 'Invalid mobile';
+    const name = normalizeName(form.name);
+    const username = form.username.trim();
+    const email = form.email.trim().toLowerCase();
+    const mobile = normalizeMobile(form.mobile);
+    const mobileDigits = mobile.replace(/^\+/, '');
+
+    if (!name) e.name = 'Name is required';
+    else if (countLetters(name) < 4) e.name = 'Name must be more than 3 letters';
+    else if (!namePattern.test(name)) e.name = 'Name can only contain letters and spaces';
+
+    if (!username) e.username = 'Username is required';
+    else if (countLetters(username) < 4) e.username = 'Username must include more than 3 letters';
+    else if (!usernamePattern.test(username)) {
+      e.username = 'Username must start with a letter and use only letters, numbers, or underscores';
+    }
+
+    if (!email) e.email = 'Email is required';
+    else if (!emailPattern.test(email)) e.email = 'Enter a valid email address';
+
+    if (!form.mobile.trim()) e.mobile = 'Mobile number is required';
+    else if (!/^\+?\d+$/.test(mobile)) e.mobile = 'Mobile number can only contain digits';
+    else if (mobileDigits.length < 10 || mobileDigits.length > 15) {
+      e.mobile = 'Mobile number must be 10 to 15 digits';
+    }
+
     return e;
   }
 
@@ -54,25 +88,24 @@ export default function RegisterPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
-    setUser({ name: form.name, username: form.username, email: form.email, mobile: form.mobile });
+    dispatch(setUser({
+      name: normalizeName(form.name),
+      username: form.username.trim(),
+      email: form.email.trim().toLowerCase(),
+      mobile: normalizeMobile(form.mobile),
+    }));
     router.push('/categories');
   }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-black">
       {/* LEFT SIDE */}
-      <div
-        className="relative w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/images/signup-bg.png')",
-        }}
-      >
+      <div className="relative min-h-[50vh] w-full bg-signup-hero bg-cover bg-center lg:min-h-screen lg:w-1/2">
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/40" />
 
@@ -90,7 +123,7 @@ export default function RegisterPage() {
       <div className="w-full lg:w-1/2 bg-black flex items-center justify-center px-8 py-10">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h2 className="font-single-day text-[#72db73] text-4xl">
+            <h2 className="font-display text-4xl text-brand">
               Super app
             </h2>
 
@@ -112,7 +145,8 @@ export default function RegisterPage() {
                 placeholder="Name"
                 value={form.name}
                 onChange={handleChange}
-                className={`w-full bg-[#292929] text-white placeholder-gray-400 px-4 py-3 rounded outline-none ${errors.name ? 'border border-red-500' : ''
+                aria-invalid={Boolean(errors.name)}
+                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.name ? 'border border-red-500' : ''
                   }`}
               />
               {errors.name && (
@@ -130,7 +164,8 @@ export default function RegisterPage() {
                 placeholder="UserName"
                 value={form.username}
                 onChange={handleChange}
-                className={`w-full bg-[#292929] text-white placeholder-gray-400 px-4 py-3 rounded outline-none ${errors.username ? 'border border-red-500' : ''
+                aria-invalid={Boolean(errors.username)}
+                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.username ? 'border border-red-500' : ''
                   }`}
               />
               {errors.username && (
@@ -148,7 +183,8 @@ export default function RegisterPage() {
                 placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
-                className={`w-full bg-[#292929] text-white placeholder-gray-400 px-4 py-3 rounded outline-none ${errors.email ? 'border border-red-500' : ''
+                aria-invalid={Boolean(errors.email)}
+                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.email ? 'border border-red-500' : ''
                   }`}
               />
               {errors.email && (
@@ -166,7 +202,8 @@ export default function RegisterPage() {
                 placeholder="Mobile"
                 value={form.mobile}
                 onChange={handleChange}
-                className={`w-full bg-[#292929] text-white placeholder-gray-400 px-4 py-3 rounded outline-none ${errors.mobile ? 'border border-red-500' : ''
+                aria-invalid={Boolean(errors.mobile)}
+                className={`w-full rounded bg-surface-field px-4 py-3 text-white placeholder-gray-400 outline-none ${errors.mobile ? 'border border-red-500' : ''
                   }`}
               />
               {errors.mobile && (
@@ -183,7 +220,7 @@ export default function RegisterPage() {
                 name="shareData"
                 checked={form.shareData}
                 onChange={handleChange}
-                className="accent-[#72db73]"
+                className="accent-brand"
               />
               <span className="text-white/70 text-sm">
                 Share my registration data with Superapp
@@ -193,14 +230,14 @@ export default function RegisterPage() {
             {/* Button */}
             <button
               type="submit"
-              className="w-full bg-[#72db73] hover:bg-[#63cb64] text-black font-bold py-3 rounded-full mt-2 transition"
+              className="mt-2 w-full rounded-full bg-brand py-3 font-bold text-black transition hover:bg-brand-hover"
             >
               SIGN UP
             </button>
 
             <p className="text-center text-white/50 text-xs leading-relaxed">
               By clicking on Sign up, you agree to Superapp{" "}
-              <span className="text-[#72db73]">
+              <span className="text-brand">
                 Terms and Conditions of Use
               </span>
             </p>
@@ -208,7 +245,7 @@ export default function RegisterPage() {
             <p className="text-center text-white/50 text-xs leading-relaxed">
               To learn more about how Superapp collects, uses, shares and
               protects your personal data please head Superapp{" "}
-              <span className="text-[#72db73]">
+              <span className="text-brand">
                 Privacy Policy
               </span>
             </p>

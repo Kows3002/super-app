@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
+import Image from 'next/image';
+import { useAppSelector } from '@/lib/store';
 import { X, Star, Calendar, Clock, ArrowLeft } from 'lucide-react';
+import Skeleton from 'react-loading-skeleton';
 
 interface Movie {
   imdbID: string;
@@ -101,9 +103,71 @@ const FALLBACK_MOVIES: Record<string, Movie[]> = {
   ],
 };
 
+function MovieGridSkeleton() {
+  return (
+    <div className="flex flex-col gap-10">
+      {[0, 1, 2].map((section) => (
+        <section key={section}>
+          <Skeleton width={120} height={18} className="mb-4" />
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
+            {[0, 1, 2, 3].map((card) => (
+              <div key={card} className="aspect-video">
+                <Skeleton height="100%" borderRadius={8} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function MoviePoster({
+  alt,
+  className,
+  fill = false,
+  sizes,
+  src,
+}: {
+  alt: string;
+  className: string;
+  fill?: boolean;
+  sizes?: string;
+  src: string;
+}) {
+  const fallbackSrc =
+    'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300';
+  const [imageSrc, setImageSrc] = useState(src !== 'N/A' ? src : fallbackSrc);
+
+  if (fill) {
+    return (
+      <Image
+        src={imageSrc}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={className}
+        onError={() => setImageSrc(fallbackSrc)}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      width={300}
+      height={450}
+      sizes={sizes}
+      className={className}
+      onError={() => setImageSrc(fallbackSrc)}
+    />
+  );
+}
+
 export default function EntertainmentPage() {
   const router = useRouter();
-  const { user, selectedCategories } = useAppStore();
+  const { user, selectedCategories } = useAppSelector((state) => state.app);
 
   const [moviesByCategory, setMoviesByCategory] = useState<Record<string, Movie[]>>({});
   const [loading, setLoading] = useState(true);
@@ -114,15 +178,15 @@ export default function EntertainmentPage() {
     if (!user) router.replace('/register');
   }, [user, router]);
 
-  const fetchMovies = useCallback(async () => {
-    const apiKey = process.env.NEXT_PUBLIC_OMDB_KEY || 'demo';
+  const fetchMovies = useCallback(async (signal: AbortSignal) => {
     const results: Record<string, Movie[]> = {};
 
     for (const cat of selectedCategories) {
       const searchTerm = CATEGORY_SEARCH_TERMS[cat] || cat;
       try {
         const res = await fetch(
-          `https://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&type=movie&apikey=${apiKey}`
+          `/api/movies?search=${encodeURIComponent(searchTerm)}`,
+          { signal }
         );
         if (!res.ok) throw new Error('failed');
         const data = await res.json();
@@ -130,15 +194,20 @@ export default function EntertainmentPage() {
           results[cat] = data.Search.slice(0, 4);
         } else throw new Error('no results');
       } catch {
+        if (signal.aborted) return;
         results[cat] = FALLBACK_MOVIES[cat] || [];
       }
     }
+    if (signal.aborted) return;
     setMoviesByCategory(results);
     setLoading(false);
   }, [selectedCategories]);
 
   useEffect(() => {
-    if (selectedCategories.length > 0) fetchMovies();
+    if (selectedCategories.length === 0) return;
+    const controller = new AbortController();
+    fetchMovies(controller.signal);
+    return () => controller.abort();
   }, [fetchMovies, selectedCategories]);
 
   async function openModal(movie: Movie) {
@@ -148,7 +217,7 @@ export default function EntertainmentPage() {
       Title: movie.Title,
       Year: movie.Year,
       Poster: movie.Poster,
-      Plot: 'Loading...',
+      Plot: '',
       Genre: '',
       Director: '',
       Actors: '',
@@ -157,8 +226,7 @@ export default function EntertainmentPage() {
       Released: 'N/A',
     });
     try {
-      const apiKey = process.env.NEXT_PUBLIC_OMDB_KEY || 'demo';
-      const res = await fetch(`https://www.omdbapi.com/?i=${movie.imdbID}&apikey=${apiKey}`);
+      const res = await fetch(`/api/movies?id=${encodeURIComponent(movie.imdbID)}`);
       if (!res.ok) throw new Error('failed');
       const data = await res.json();
       if (data.Response === 'True') {
@@ -191,12 +259,15 @@ export default function EntertainmentPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <div className="px-6 py-4 md:px-10 flex items-center justify-between border-b border-white/10 sticky top-0 bg-black/90 backdrop-blur-sm z-40">
-        <span className="font-single-day text-3xl text-[#72db73]">Super app</span>
+        <span className="font-display text-3xl text-brand">Super app</span>
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full overflow-hidden border border-white/30">
-            <img
+            <Image
               src="https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=80"
               alt="avatar"
+              width={32}
+              height={32}
+              priority
               className="w-full h-full object-cover"
             />
           </div>
@@ -216,7 +287,7 @@ export default function EntertainmentPage() {
         <h1 className="text-white text-2xl font-bold mb-8">Entertainment according to your choice</h1>
 
         {loading ? (
-          <div className="flex items-center justify-center h-64 text-white/40">Loading movies...</div>
+          <MovieGridSkeleton />
         ) : (
           <div className="flex flex-col gap-10">
             {selectedCategories.map((cat) => (
@@ -229,18 +300,12 @@ export default function EntertainmentPage() {
                       onClick={() => openModal(movie)}
                       className="group relative overflow-hidden rounded-lg aspect-[16/9] bg-white/5 hover:scale-105 transition-all duration-300"
                     >
-                      <img
-                        src={
-                          movie.Poster !== 'N/A'
-                            ? movie.Poster
-                            : 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300'
-                        }
+                      <MoviePoster
+                        src={movie.Poster}
                         alt={movie.Title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300';
-                        }}
+                        fill
+                        sizes="(min-width: 768px) 25vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
                       />
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
@@ -267,7 +332,7 @@ export default function EntertainmentPage() {
           onClick={() => setSelectedMovie(null)}
         >
           <div
-            className="bg-[#1a1a2e] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-surface-elevated"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -280,13 +345,10 @@ export default function EntertainmentPage() {
             <div className="flex flex-col sm:flex-row gap-0">
               {/* Poster */}
               <div className="sm:w-56 shrink-0">
-                <img
-                  src={selectedMovie.Poster !== 'N/A' ? selectedMovie.Poster : 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300'}
+                <MoviePoster
+                  src={selectedMovie.Poster}
                   alt={selectedMovie.Title}
                   className="w-full sm:h-full object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none max-h-64 sm:max-h-none"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300';
-                  }}
                 />
               </div>
               {/* Details */}
@@ -322,9 +384,13 @@ export default function EntertainmentPage() {
                   )}
                 </div>
 
-                {selectedMovie.Plot && selectedMovie.Plot !== 'N/A' && (
+                {modalLoading ? (
+                  <div className="text-sm leading-relaxed">
+                    <Skeleton count={3} />
+                  </div>
+                ) : selectedMovie.Plot && selectedMovie.Plot !== 'N/A' && (
                   <p className="text-white/70 text-sm leading-relaxed">
-                    {modalLoading ? 'Loading...' : selectedMovie.Plot}
+                    {selectedMovie.Plot}
                   </p>
                 )}
 
