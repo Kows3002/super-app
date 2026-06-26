@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 export const siteUrl = 'https://super-app-iota-peach.vercel.app';
 export const siteName = 'Super App';
 export const ogImage = '/images/og/og-image.png';
+export const defaultDescription =
+  'Personalize a dashboard with live weather, latest news, notes, a countdown timer, and movie recommendations in Super App.';
 
 type PageSeo = {
   title: string;
@@ -18,11 +20,21 @@ export function createPageMetadata({
   keywords = [],
 }: PageSeo): Metadata {
   const url = `${siteUrl}${path}`;
+  const imageUrl = `${siteUrl}${ogImage}`;
 
   return {
     title,
     description,
     keywords,
+    applicationName: siteName,
+    creator: 'Kowsalya',
+    publisher: siteName,
+    referrer: 'origin-when-cross-origin',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
     alternates: {
       canonical: url,
     },
@@ -35,7 +47,7 @@ export function createPageMetadata({
       type: 'website',
       images: [
         {
-          url: ogImage,
+          url: imageUrl,
           width: 1200,
           height: 630,
           alt: `${siteName} preview`,
@@ -46,7 +58,7 @@ export function createPageMetadata({
       card: 'summary_large_image',
       title,
       description,
-      images: [ogImage],
+      images: [imageUrl],
     },
     robots: {
       index: true,

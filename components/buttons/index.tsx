@@ -23,7 +23,7 @@ export function SubmitButton({ className, type = 'submit', ...props }: AppButton
     <button
       type={type}
       className={cn(
-        'mt-2 w-full rounded-full bg-brand py-3 font-bold text-black transition hover:bg-brand-hover',
+        'mt-2 w-full rounded-full bg-brand py-3 font-bold text-[whitesmoke] transition hover:bg-brand-hover',
         className
       )}
       {...props}

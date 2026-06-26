@@ -1,8 +1,7 @@
 import './globals.css';
-import 'react-loading-skeleton/dist/skeleton.css';
 import type { Metadata } from 'next';
 import { Providers } from './providers';
-import { createPageMetadata, siteName, siteUrl } from '@/lib/seo';
+import { createPageMetadata, defaultDescription, siteName, siteUrl } from '@/lib/seo';
 
 export const metadata: Metadata = {
   ...createPageMetadata({
@@ -20,6 +19,13 @@ export const metadata: Metadata = {
     ],
   }),
   metadataBase: new URL('https://super-app-iota-peach.vercel.app'),
+  manifest: '/manifest.webmanifest',
+  themeColor: '#000000',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
   applicationName: siteName,
   creator: 'Kowsalya',
   publisher: siteName,
@@ -36,6 +42,30 @@ export const metadata: Metadata = {
   ],
 };
 
+const webApplicationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: siteName,
+  url: siteUrl,
+  applicationCategory: 'LifestyleApplication',
+  operatingSystem: 'Any',
+  description: defaultDescription,
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  featureList: [
+    'Registration and onboarding',
+    'Personalized entertainment categories',
+    'Live weather dashboard',
+    'Latest news feed',
+    'Persistent notes',
+    'Countdown timer',
+    'Movie recommendations',
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,6 +74,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd) }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

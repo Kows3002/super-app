@@ -18,6 +18,7 @@ interface Errors {
   username?: string;
   email?: string;
   mobile?: string;
+  shareData?: string;
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -72,9 +73,11 @@ export default function RegisterPage() {
 
     if (!form.mobile.trim()) e.mobile = 'Mobile number is required';
     else if (!/^\+?\d+$/.test(mobile)) e.mobile = 'Mobile number can only contain digits';
-    else if (mobileDigits.length < 10 || mobileDigits.length > 15) {
-      e.mobile = 'Mobile number must be 10 to 15 digits';
+    else if (mobileDigits.length < 2) {
+      e.mobile = 'Mobile number must be more than 1 digit';
     }
+
+    if (!form.shareData) e.shareData = 'Check this box if you want to proceed';
 
     return e;
   }
@@ -110,9 +113,9 @@ export default function RegisterPage() {
 
         <div className="relative z-10 h-full flex flex-col justify-between p-8 lg:p-12">
           <div className="mt-auto">
-            <h2 className="text-white text-4xl lg:text-5xl font-bold leading-tight max-w-md">
+            <h1 className="text-white text-4xl lg:text-5xl font-bold leading-tight max-w-md">
               Discover new things on Superapp
-            </h2>
+            </h1>
           </div>
         </div>
       </div>
@@ -206,34 +209,42 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <label className="flex items-center gap-2 mt-2">
-              <input
-                type="checkbox"
-                name="shareData"
-                checked={form.shareData}
-                onChange={handleChange}
-                className="accent-brand"
-              />
-              <span className="text-white/70 text-sm">
-                Share my registration data with Superapp
-              </span>
-            </label>
+            <div className="mt-2 w-full">
+              <label className="flex w-full items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="shareData"
+                  checked={form.shareData}
+                  onChange={handleChange}
+                  aria-invalid={Boolean(errors.shareData)}
+                  className="h-5 w-5 shrink-0 accent-brand"
+                />
+                <span className="text-base leading-6 text-white/70">
+                  Share my registration data with Superapp
+                </span>
+              </label>
+              {errors.shareData && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.shareData}
+                </p>
+              )}
+            </div>
 
-            <SubmitButton>
+            <SubmitButton className="mt-7">
               SIGN UP
             </SubmitButton>
 
-            <p className="text-center text-white/50 text-xs leading-relaxed">
+            <p className="w-full text-left text-base leading-7 text-white/50">
               By clicking on Sign up, you agree to Superapp{" "}
-              <span className="text-brand">
+              <span className="font-semibold text-brand">
                 Terms and Conditions of Use
               </span>
             </p>
 
-            <p className="text-center text-white/50 text-xs leading-relaxed">
+            <p className="w-full text-left text-base leading-7 text-white/50">
               To learn more about how Superapp collects, uses, shares and
               protects your personal data please head Superapp{" "}
-              <span className="text-brand">
+              <span className="font-semibold text-brand">
                 Privacy Policy
               </span>
             </p>

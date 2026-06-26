@@ -1,15 +1,26 @@
 'use client';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Provider } from 'react-redux';
-import { SkeletonTheme } from 'react-loading-skeleton';
 import { store } from '@/lib/store';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
   return (
-    <Provider store={store}>
-      <SkeletonTheme baseColor="#171717" highlightColor="#2a2a2a" borderRadius={8}>
-        {children}
-      </SkeletonTheme>
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>{children}</Provider>
+    </QueryClientProvider>
   );
 }

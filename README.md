@@ -1,112 +1,143 @@
 # Super App
 
-A polished Next.js dashboard that combines account onboarding, personalized entertainment categories, live weather, rotating news, notes, a countdown timer, and movie recommendations in one responsive experience.
+Super App is a responsive Next.js dashboard built for the Frontend Challenge. It combines registration, category onboarding, live weather, rotating news, persistent notes, a working timer, and personalized entertainment discovery in a single user flow.
+
+The project follows the provided Figma direction and focuses on clean UI composition, typed state management, server-side API protection, reusable components, SEO, and production-oriented performance.
+
+## Live Experience
+
+The application flow is:
+
+1. Register with name, username, email, and mobile number.
+2. Select at least three entertainment categories.
+3. View the personalized dashboard with profile data, weather, news, notes, and timer.
+4. Browse movie recommendations generated from the selected categories.
+5. Open a movie detail modal for rating, runtime, genre, director, cast, and plot.
 
 ## Features
 
-- Account registration with robust form validation for name, username, email, and mobile number.
-- Category selection flow with a minimum of 3 entertainment preferences.
-- Personalized dashboard with profile summary, selected categories, weather, news, notes, and timer.
-- Latest news carousel that changes every 2 seconds and avoids duplicate articles.
-- Entertainment page powered by selected categories and OMDb movie data.
-- Movie detail modal with rating, runtime, cast, director, genre, and plot.
-- Redux Toolkit state management with localStorage persistence.
-- Tailwind CSS design system with reusable app button components.
-- Skeleton loading states using `react-loading-skeleton`.
-- Page-level SEO metadata, Open Graph tags, Twitter cards, sitemap, and robots config.
-- Next.js API routes for cached server-side third-party API requests.
-- Optimized images through `next/image`.
+### Authentication and Registration
+
+- Captures name, username, email, and mobile number.
+- Validates every field before allowing the user to continue.
+- Shows clear error states for invalid or missing input.
+- Stores registered user data in global app state.
+
+### Category Onboarding
+
+- Lets users select entertainment categories from the onboarding screen.
+- Requires a minimum of three categories before proceeding.
+- Persists selected categories and displays them on the dashboard profile card.
+
+### Super Dashboard
+
+- Displays registration data in a personalized profile section.
+- Shows a live weather widget powered by OpenWeatherMap.
+- Includes a working timer with hour, minute, and second controls.
+- Displays latest news in an automatically rotating feed.
+- Saves notes in browser storage through Redux-backed persistence.
+- Uses polished loading states while API data is being fetched.
+
+### Entertainment Discovery
+
+- Fetches movies dynamically based on selected categories.
+- Uses OMDb search results for personalized listing sections.
+- Includes hover animations on movie cards.
+- Opens a movie detail modal with expanded metadata.
+- Provides local fallback content when an external API is unavailable.
+
+## Technical Highlights
+
+- Built with Next.js 13 App Router, React 18, and TypeScript.
+- Styled with Tailwind CSS and reusable app-specific UI components.
+- Uses Redux Toolkit for global user, category, and notes state.
+- Uses TanStack React Query for client-side API fetching, caching, loading states, retry behavior, and request cancellation.
+- Uses Next.js route handlers as server-side API proxies so third-party API keys stay out of the browser.
+- Uses `next/image` for optimized image rendering.
+- Includes SEO metadata, Open Graph tags, Twitter cards, sitemap, and robots configuration.
+- Includes a Lighthouse report focused on performance, accessibility, best practices, and SEO.
+
+## Lighthouse Score
+
+Latest recorded Lighthouse dashboard score:
+
+| Category | Score |
+| --- | ---: |
+| Performance | 99 |
+| Accessibility | 96 |
+| Best Practices | 100 |
+| SEO | 100 |
+
+The report is available in `.lighthouse-dashboard.json`.
 
 ## Tech Stack
 
-- Next.js 13 App Router
+- Next.js 13
 - React 18
 - TypeScript
 - Tailwind CSS
 - Redux Toolkit
 - React Redux
-- React Loading Skeleton
+- TanStack React Query
+- React Hook Form
+- Zod
 - Lucide React
+- React Loading Skeleton
 - OpenWeatherMap API
-- NewsAPI
+- NewsAPI, World News API, or Google News RSS fallback
 - OMDb API
 
-## Getting Started
+## API Strategy
 
-### 1. Install Dependencies
+The browser does not call third-party services directly. Client components use React Query to call internal Next.js API routes:
 
-```bash
-npm install
-```
+| Internal Route | Purpose |
+| --- | --- |
+| `/api/weather` | Fetches and normalizes OpenWeatherMap data |
+| `/api/news` | Fetches and normalizes latest news |
+| `/api/movies` | Fetches OMDb search and movie detail data |
 
-### 2. Configure Environment Variables
+This approach keeps API keys server-side, centralizes response formatting, and allows route-level caching and fallback handling.
 
-Create a `.env` file in the project root:
+## React Query Usage
 
-```env
-OPENWEATHER_KEY=your_openweathermap_api_key
-NEWS_KEY=your_newsapi_key
-OMDB_KEY=your_omdb_api_key
-```
+React Query is used for API-driven UI state:
 
-The app reads these keys only on the server through Next.js API routes.
+- Weather query with a five-minute stale time.
+- News query with a short stale time for fresh headlines.
+- Movie category query keyed by selected categories.
+- Movie detail query keyed by IMDb ID.
+- Built-in request cancellation through `AbortSignal`.
+- Consistent loading state handling without manual `useEffect` fetch logic.
 
-### 3. Run the Development Server
+## State Management
 
-```bash
-npm run dev
-```
+Global state lives in `lib/store.ts` and is managed with Redux Toolkit.
 
-Open:
+The store contains:
+
+- Registered user data
+- Selected entertainment categories
+- Dashboard notes
+
+State is persisted to `localStorage` using the key:
 
 ```text
-http://localhost:3000
+superapp-storage
 ```
 
-## Available Scripts
+## SEO
 
-```bash
-npm run dev
-```
+SEO support is implemented through `lib/seo.ts`, route metadata, sitemap, and robots configuration.
 
-Starts the local development server.
+The app includes:
 
-```bash
-npm run lint
-```
-
-Runs Next.js ESLint checks.
-
-```bash
-npm run typecheck
-```
-
-Runs TypeScript without emitting files.
-
-```bash
-npm run build
-```
-
-Creates a production build.
-
-```bash
-npm run start
-```
-
-Starts the production server after building.
-
-## Routes
-
-| Route | Purpose |
-| --- | --- |
-| `/` | Redirects to registration |
-| `/register` | User registration and validation |
-| `/categories` | Entertainment category selection |
-| `/dashboard` | Weather, news, notes, timer, and profile dashboard |
-| `/entertainment` | Personalized movie recommendations |
-| `/api/weather` | Cached server-side weather API proxy |
-| `/api/news` | Cached server-side news API proxy |
-| `/api/movies` | Cached server-side OMDb API proxy |
+- Page-level titles and descriptions
+- Canonical URLs
+- Open Graph metadata
+- Twitter card metadata
+- SEO-friendly robots settings
+- Dynamic sitemap generation
 
 ## Project Structure
 
@@ -137,98 +168,90 @@ public/
   images/
 ```
 
-## State Management
+## Environment Variables
 
-Global app state lives in `lib/store.ts` and is managed with Redux Toolkit.
+Create a `.env` file in the project root:
 
-Stored state includes:
+```env
+OPENWEATHER_KEY=your_openweathermap_api_key
+OMDB_KEY=your_omdb_api_key
 
-- Registered user
-- Selected entertainment categories
-- Dashboard notes
-
-The Redux store persists data to `localStorage` under:
-
-```text
-superapp-storage
+# Use either NewsAPI or World News API.
+NEWS_API_KEY=your_newsapi_key
+WORLD_NEWS_API_KEY=your_world_news_api_key
 ```
 
-## API and Caching
+The news route can also fall back to Google News RSS when a news API key is not available.
 
-Third-party API calls are handled by Next.js route handlers instead of the browser:
+## Getting Started
 
-- Weather data revalidates every 5 minutes.
-- News data revalidates every 2 minutes.
-- Movie data revalidates every 1 hour.
+Install dependencies:
 
-This keeps API keys server-side and reduces repeated client-side network work.
-
-## SEO
-
-The app includes:
-
-- Root metadata defaults
-- Page-specific metadata layouts
-- Canonical URLs
-- Open Graph metadata
-- Twitter card metadata
-- Sitemap generation
-- Robots configuration
-
-SEO helper logic lives in:
-
-```text
-lib/seo.ts
+```bash
+npm install
 ```
 
-## Reusable Buttons
+Run the development server:
 
-App-specific button patterns live in:
-
-```text
-components/buttons/index.tsx
+```bash
+npm run dev
 ```
 
-Available button components include:
+Open the app:
 
-- `BrandButton`
-- `SubmitButton`
-- `TextNavButton`
-- `IconControlButton`
-- `SecondaryButton`
-- `DarkButton`
-- `DotButton`
-- `TagRemoveButton`
-- `CategoryCardButton`
-- `MovieCardButton`
-- `ModalCloseButton`
+```text
+http://localhost:3000
+```
+
+If this repository is inside an extra parent folder, run commands from the actual app directory that contains `package.json`.
+
+## Available Scripts
+
+```bash
+npm run dev
+```
+
+Starts the local development server.
+
+```bash
+npm run typecheck
+```
+
+Runs TypeScript validation.
+
+```bash
+npm run lint
+```
+
+Runs Next.js lint checks.
+
+```bash
+npm run build
+```
+
+Creates a production build.
+
+```bash
+npm run start
+```
+
+Starts the production server after building.
 
 ## Validation Rules
 
 Registration validates:
 
-- Name is required, must be more than 3 letters, and may contain only letters/spaces.
-- Username is required, must include more than 3 letters, must start with a letter, and may contain letters, numbers, and underscores.
-- Email is required and must match a valid email format.
+- Name is required and must contain only letters and spaces.
+- Username is required, must start with a letter, and may contain letters, numbers, and underscores.
+- Email is required and must follow a valid email format.
 - Mobile number is required and must contain 10 to 15 digits.
 
-## Performance Notes
+Category onboarding validates:
 
-- Uses `next/image` for optimized local and remote images.
-- Uses server-side API routes with revalidation.
-- Uses skeleton loading for route and data loading states.
-- Uses reusable components to reduce repeated UI code.
-- Uses Tailwind utility classes with centralized theme tokens.
-
-## Quality Checks
-
-Before committing, run:
-
-```bash
-npm run typecheck
-npm run lint
-```
+- At least three entertainment categories must be selected before continuing.
 
 ## Deployment
 
-The project is ready for deployment on platforms that support Next.js, including Vercel and Netlify. Add the required environment variables in your deployment provider before publishing.
+The app can be deployed on Vercel or Netlify. Add the required environment variables in the deployment dashboard before publishing.
+
+For Netlify, the project includes `netlify.toml` and the Next.js Netlify plugin dependency.

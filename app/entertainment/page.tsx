@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ModalCloseButton, MovieCardButton, TextNavButton } from '@/components/buttons';
 import { useAppSelector } from '@/lib/store';
 import { Star, Calendar, Clock, ArrowLeft } from 'lucide-react';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 interface Movie {
   imdbID: string;
@@ -104,6 +106,67 @@ const FALLBACK_MOVIES: Record<string, Movie[]> = {
   ],
 };
 
+function getFallbackMovieDetail(movie: Movie): MovieDetail {
+  return {
+    imdbID: movie.imdbID,
+    Title: movie.Title,
+    Year: movie.Year,
+    Poster: movie.Poster,
+    Plot: 'An exciting film worth watching.',
+    Genre: 'Various',
+    Director: 'Unknown',
+    Actors: 'Various',
+    imdbRating: '7.5',
+    Runtime: '120 min',
+    Released: movie.Year,
+  };
+}
+
+async function getMoviesByCategory(categories: string[], signal?: AbortSignal) {
+  const results: Record<string, Movie[]> = {};
+
+  await Promise.all(
+    categories.map(async (cat) => {
+      const searchTerm = CATEGORY_SEARCH_TERMS[cat] || cat;
+
+      try {
+        const res = await fetch(
+          `/api/movies?search=${encodeURIComponent(searchTerm)}`,
+          { signal }
+        );
+        if (!res.ok) throw new Error('failed');
+        const data = await res.json();
+        if (data.Search?.length) {
+          results[cat] = data.Search.slice(0, 4);
+          return;
+        }
+        throw new Error('no results');
+      } catch {
+        if (signal?.aborted) throw new Error('aborted');
+        results[cat] = FALLBACK_MOVIES[cat] || [];
+      }
+    })
+  );
+
+  return results;
+}
+
+async function getMovieDetail(movie: Movie, signal?: AbortSignal): Promise<MovieDetail> {
+  try {
+    const res = await fetch(`/api/movies?id=${encodeURIComponent(movie.imdbID)}`, { signal });
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    if (data.Response === 'True') return data;
+    return getFallbackMovieDetail(movie);
+  } catch {
+    if (signal?.aborted) throw new Error('aborted');
+    return {
+      ...getFallbackMovieDetail(movie),
+      Plot: 'An exciting film worth watching.',
+    };
+  }
+}
+
 function MovieGridSkeleton() {
   return (
     <div className="flex flex-col gap-10">
@@ -170,54 +233,25 @@ export default function EntertainmentPage() {
   const router = useRouter();
   const { user, selectedCategories } = useAppSelector((state) => state.app);
 
-  const [moviesByCategory, setMoviesByCategory] = useState<Record<string, Movie[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [selectedMovie, setSelectedMovie] = useState<MovieDetail | null>(null);
-  const [modalLoading, setModalLoading] = useState(false);
-
-  useEffect(() => {
-    if (!user) router.replace('/register');
-  }, [user, router]);
-
-  const fetchMovies = useCallback(async (signal: AbortSignal) => {
-    const results: Record<string, Movie[]> = {};
-
-    for (const cat of selectedCategories) {
-      const searchTerm = CATEGORY_SEARCH_TERMS[cat] || cat;
-      try {
-        const res = await fetch(
-          `/api/movies?search=${encodeURIComponent(searchTerm)}`,
-          { signal }
-        );
-        if (!res.ok) throw new Error('failed');
-        const data = await res.json();
-        if (data.Search?.length) {
-          results[cat] = data.Search.slice(0, 4);
-        } else throw new Error('no results');
-      } catch {
-        if (signal.aborted) return;
-        results[cat] = FALLBACK_MOVIES[cat] || [];
-      }
-    }
-    if (signal.aborted) return;
-    setMoviesByCategory(results);
-    setLoading(false);
-  }, [selectedCategories]);
-
-  useEffect(() => {
-    if (selectedCategories.length === 0) return;
-    const controller = new AbortController();
-    fetchMovies(controller.signal);
-    return () => controller.abort();
-  }, [fetchMovies, selectedCategories]);
-
-  async function openModal(movie: Movie) {
-    setModalLoading(true);
-    setSelectedMovie({
-      imdbID: movie.imdbID,
-      Title: movie.Title,
-      Year: movie.Year,
-      Poster: movie.Poster,
+  const moviesQuery = useQuery<Record<string, Movie[]>>({
+    queryKey: ['movies-by-category', selectedCategories],
+    queryFn: ({ signal }) => getMoviesByCategory(selectedCategories, signal),
+    enabled: selectedCategories.length > 0,
+    staleTime: 60 * 60 * 1000,
+  });
+  const moviesByCategory: Record<string, Movie[]> = moviesQuery.data ?? {};
+  const loading = moviesQuery.isLoading;
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const movieDetailQuery = useQuery<MovieDetail>({
+    queryKey: ['movie-detail', selectedMovie?.imdbID],
+    queryFn: ({ signal }) => getMovieDetail(selectedMovie as Movie, signal),
+    enabled: Boolean(selectedMovie),
+    staleTime: 60 * 60 * 1000,
+  });
+  const modalLoading = movieDetailQuery.isFetching;
+  const currentMovieDetail: MovieDetail | null = selectedMovie
+    ? movieDetailQuery.data ?? {
+      ...getFallbackMovieDetail(selectedMovie),
       Plot: '',
       Genre: '',
       Director: '',
@@ -225,33 +259,15 @@ export default function EntertainmentPage() {
       imdbRating: 'N/A',
       Runtime: 'N/A',
       Released: 'N/A',
-    });
-    try {
-      const res = await fetch(`/api/movies?id=${encodeURIComponent(movie.imdbID)}`);
-      if (!res.ok) throw new Error('failed');
-      const data = await res.json();
-      if (data.Response === 'True') {
-        setSelectedMovie(data);
-      } else {
-        setSelectedMovie({
-          imdbID: movie.imdbID,
-          Title: movie.Title,
-          Year: movie.Year,
-          Poster: movie.Poster,
-          Plot: 'An exciting film worth watching.',
-          Genre: 'Various',
-          Director: 'Unknown',
-          Actors: 'Various',
-          imdbRating: '7.5',
-          Runtime: '120 min',
-          Released: movie.Year,
-        });
-      }
-    } catch {
-      setSelectedMovie((prev) => prev ? { ...prev, Plot: 'An exciting film worth watching.' } : null);
-    } finally {
-      setModalLoading(false);
     }
+    : null;
+
+  useEffect(() => {
+    if (!user) router.replace('/register');
+  }, [user, router]);
+
+  function openModal(movie: Movie) {
+    setSelectedMovie(movie);
   }
 
   if (!user) return null;
@@ -293,7 +309,7 @@ export default function EntertainmentPage() {
               <section key={cat}>
                 <h2 className="text-white/60 text-sm font-medium mb-4 uppercase tracking-wider">{cat}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-                  {(moviesByCategory[cat] || []).map((movie) => (
+                  {(moviesByCategory[cat] || []).map((movie: Movie) => (
                     <MovieCardButton
                       key={movie.imdbID}
                       onClick={() => openModal(movie)}
@@ -323,7 +339,7 @@ export default function EntertainmentPage() {
         )}
       </div>
 
-      {selectedMovie && (
+      {currentMovieDetail && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedMovie(null)}
@@ -337,39 +353,39 @@ export default function EntertainmentPage() {
             <div className="flex flex-col sm:flex-row gap-0">
               <div className="sm:w-56 shrink-0">
                 <MoviePoster
-                  src={selectedMovie.Poster}
-                  alt={selectedMovie.Title}
+                  src={currentMovieDetail.Poster}
+                  alt={currentMovieDetail.Title}
                   className="w-full sm:h-full object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none max-h-64 sm:max-h-none"
                 />
               </div>
               <div className="p-6 flex flex-col gap-3 flex-1">
-                <h2 className="text-white font-bold text-2xl leading-tight">{selectedMovie.Title}</h2>
+                <h2 className="text-white font-bold text-2xl leading-tight">{currentMovieDetail.Title}</h2>
 
                 <div className="flex flex-wrap gap-2">
-                  {selectedMovie.Genre && selectedMovie.Genre !== 'N/A' &&
-                    selectedMovie.Genre.split(', ').map((g) => (
+                  {currentMovieDetail.Genre && currentMovieDetail.Genre !== 'N/A' &&
+                    currentMovieDetail.Genre.split(', ').map((g: string) => (
                       <span key={g} className="bg-white/10 text-white/70 text-xs px-2 py-0.5 rounded-full">{g}</span>
                     ))
                   }
                 </div>
 
                 <div className="flex items-center gap-4 text-sm">
-                  {selectedMovie.imdbRating !== 'N/A' && (
+                  {currentMovieDetail.imdbRating !== 'N/A' && (
                     <div className="flex items-center gap-1 text-yellow-400">
                       <Star size={14} fill="currentColor" />
-                      <span className="font-bold">{selectedMovie.imdbRating}</span>
+                      <span className="font-bold">{currentMovieDetail.imdbRating}</span>
                     </div>
                   )}
-                  {selectedMovie.Runtime !== 'N/A' && (
+                  {currentMovieDetail.Runtime !== 'N/A' && (
                     <div className="flex items-center gap-1 text-white/60">
                       <Clock size={14} />
-                      <span>{selectedMovie.Runtime}</span>
+                      <span>{currentMovieDetail.Runtime}</span>
                     </div>
                   )}
-                  {selectedMovie.Released !== 'N/A' && (
+                  {currentMovieDetail.Released !== 'N/A' && (
                     <div className="flex items-center gap-1 text-white/60">
                       <Calendar size={14} />
-                      <span>{selectedMovie.Year}</span>
+                      <span>{currentMovieDetail.Year}</span>
                     </div>
                   )}
                 </div>
@@ -378,23 +394,23 @@ export default function EntertainmentPage() {
                   <div className="text-sm leading-relaxed">
                     <Skeleton count={3} />
                   </div>
-                ) : selectedMovie.Plot && selectedMovie.Plot !== 'N/A' && (
+                ) : currentMovieDetail.Plot && currentMovieDetail.Plot !== 'N/A' && (
                   <p className="text-white/70 text-sm leading-relaxed">
-                    {selectedMovie.Plot}
+                    {currentMovieDetail.Plot}
                   </p>
                 )}
 
-                {selectedMovie.Director && selectedMovie.Director !== 'N/A' && (
+                {currentMovieDetail.Director && currentMovieDetail.Director !== 'N/A' && (
                   <div>
                     <span className="text-white/40 text-xs">Director</span>
-                    <p className="text-white text-sm">{selectedMovie.Director}</p>
+                    <p className="text-white text-sm">{currentMovieDetail.Director}</p>
                   </div>
                 )}
 
-                {selectedMovie.Actors && selectedMovie.Actors !== 'N/A' && (
+                {currentMovieDetail.Actors && currentMovieDetail.Actors !== 'N/A' && (
                   <div>
                     <span className="text-white/40 text-xs">Cast</span>
-                    <p className="text-white text-sm">{selectedMovie.Actors}</p>
+                    <p className="text-white text-sm">{currentMovieDetail.Actors}</p>
                   </div>
                 )}
               </div>
